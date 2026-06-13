@@ -2,20 +2,27 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Prediction;
-use Illuminate\Support\Facades\DB;
+use App\Models\User;
 use Illuminate\View\View;
 
 class LeaderboardController extends Controller
 {
     public function index(): View
     {
-        $leaders = Prediction::query()
-            ->select('users.id', 'users.name', DB::raw('SUM(predictions.points) as total_points'), DB::raw('COUNT(predictions.id) as tips_count'))
-            ->join('users', 'users.id', '=', 'predictions.user_id')
-            ->groupBy('users.id', 'users.name')
+        $leaders = User::query()
+            ->has('predictions')
+            ->withCount('predictions as tips_count')
+            ->withSum('predictions as total_points', 'points')
+            ->with([
+                'predictions' => fn ($query) => $query
+                    ->select('predictions.*')
+                    ->join('match_games', 'match_games.id', '=', 'predictions.match_game_id')
+                    ->with('matchGame')
+                    ->orderBy('match_games.starts_at')
+                    ->orderBy('match_games.id'),
+            ])
             ->orderByDesc('total_points')
-            ->orderBy('users.name')
+            ->orderBy('name')
             ->get();
 
         return view('leaderboard.index', compact('leaders'));
