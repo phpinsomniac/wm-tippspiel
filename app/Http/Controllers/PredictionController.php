@@ -14,7 +14,10 @@ class PredictionController extends Controller
     {
         $predictions = Prediction::with('matchGame')
             ->where('user_id', auth()->id())
-            ->latest()
+            ->join('match_games', 'match_games.id', '=', 'predictions.match_game_id')
+            ->select('predictions.*')
+            ->orderBy('match_games.starts_at')
+            ->orderBy('match_games.id')
             ->get();
 
         return view('predictions.index', compact('predictions'));

@@ -113,4 +113,39 @@ class PredictionTest extends TestCase
             'away_score' => 2,
         ]);
     }
+
+    public function test_my_predictions_are_ordered_by_match_start_date_ascending()
+    {
+        $user = User::factory()->create();
+        $laterMatch = MatchGame::create([
+            'home_team' => 'Team Later',
+            'away_team' => 'Team B',
+            'starts_at' => now()->addDays(2),
+            'stage' => 'Group',
+            'is_final' => false
+        ]);
+        $earlierMatch = MatchGame::create([
+            'home_team' => 'Team Earlier',
+            'away_team' => 'Team D',
+            'starts_at' => now()->addDay(),
+            'stage' => 'Group',
+            'is_final' => false
+        ]);
+
+        $user->predictions()->create([
+            'match_game_id' => $laterMatch->id,
+            'home_score' => 1,
+            'away_score' => 0,
+        ]);
+        $user->predictions()->create([
+            'match_game_id' => $earlierMatch->id,
+            'home_score' => 2,
+            'away_score' => 0,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('predictions.index'));
+
+        $response->assertOk();
+        $response->assertSeeInOrder(['Team Earlier - Team D', 'Team Later - Team B']);
+    }
 }
