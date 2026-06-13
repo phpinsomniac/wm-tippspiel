@@ -74,6 +74,7 @@ class MatchResultService
     protected function findMatch(string $homeApi, string $awayApi): ?MatchGame
     {
         $mapping = [
+            'Kanada' => 'Canada',
             'Mexiko' => 'Mexico',
             'Südafrika' => 'South Africa',
             'Südkorea' => 'Korea Republic',
