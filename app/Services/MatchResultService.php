@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\MatchGame;
 use App\Models\Prediction;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -50,8 +51,9 @@ class MatchResultService
         }
 
         // Wenn das Spiel bereits als final markiert ist, überspringen wir es
-        if ($match->is_final) {
-            return;
+        if (! empty($matchData['matchDateTime'])) {
+            $match->starts_at = CarbonImmutable::parse($matchData['matchDateTime']);
+            $match->save();
         }
 
         $isFinished = $matchData['matchIsFinished'] ?? false;
@@ -61,12 +63,17 @@ class MatchResultService
             $finalResult = collect($matchData['matchResults'])->first(fn($res) => $res['resultTypeID'] === 2);
 
             if ($finalResult) {
+                $scoreChanged = $match->home_score !== $finalResult['pointsTeam1']
+                    || $match->away_score !== $finalResult['pointsTeam2'];
+
                 $match->home_score = $finalResult['pointsTeam1'];
                 $match->away_score = $finalResult['pointsTeam2'];
                 $match->is_final = true;
                 $match->save();
 
-                $this->updatePredictions($match);
+                if ($scoreChanged || $match->wasChanged('is_final')) {
+                    $this->updatePredictions($match);
+                }
             }
         }
     }
@@ -81,6 +88,8 @@ class MatchResultService
             'Tschechien' => 'Czechia',
             'Bosnien-Herzegowina' => 'Bosnia & Herzegovina',
             'Türkei' => 'Türkiye',
+            'Australien' => 'Australia',
+            'Schweiz' => 'Switzerland',
             'Brasilien' => 'Brazil',
             'Katar' => 'Qatar',
             'Elfenbeinküste' => 'Côte d\'Ivoire',

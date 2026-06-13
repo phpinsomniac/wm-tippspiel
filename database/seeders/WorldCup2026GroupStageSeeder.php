@@ -25,11 +25,11 @@ class WorldCup2026GroupStageSeeder extends Seeder
 
         $games = [
             ['no' => 1,  'group' => 'A', 'kickoff_et' => '2026-06-11 15:00', 'home' => 'Mexico',                  'away' => 'South Africa'],
-            ['no' => 2,  'group' => 'A', 'kickoff_et' => '2026-06-12 22:00', 'home' => 'Korea Republic',          'away' => 'Czechia'],
+            ['no' => 2,  'group' => 'A', 'kickoff_et' => '2026-06-11 22:00', 'home' => 'Korea Republic',          'away' => 'Czechia'],
             ['no' => 3,  'group' => 'B', 'kickoff_et' => '2026-06-12 15:00', 'home' => 'Canada',                  'away' => 'Bosnia & Herzegovina'],
             ['no' => 4,  'group' => 'D', 'kickoff_et' => '2026-06-12 21:00', 'home' => 'USA',                     'away' => 'Paraguay'],
             ['no' => 5,  'group' => 'C', 'kickoff_et' => '2026-06-13 21:00', 'home' => 'Haiti',                   'away' => 'Scotland'],
-            ['no' => 6,  'group' => 'D', 'kickoff_et' => '2026-06-13 00:00', 'home' => 'Australia',               'away' => 'Türkiye'],
+            ['no' => 6,  'group' => 'D', 'kickoff_et' => '2026-06-14 00:00', 'home' => 'Australia',               'away' => 'Türkiye'],
             ['no' => 7,  'group' => 'C', 'kickoff_et' => '2026-06-13 18:00', 'home' => 'Brazil',                  'away' => 'Morocco'],
             ['no' => 8,  'group' => 'B', 'kickoff_et' => '2026-06-13 15:00', 'home' => 'Qatar',                   'away' => 'Switzerland'],
             ['no' => 9,  'group' => 'E', 'kickoff_et' => '2026-06-14 19:00', 'home' => "Côte d'Ivoire",          'away' => 'Ecuador'],
@@ -112,9 +112,6 @@ class WorldCup2026GroupStageSeeder extends Seeder
                 [
                     'group_name' => 'Gruppe '.$game['group'],
                     'starts_at' => $startsAt,
-                    'home_score' => null,
-                    'away_score' => null,
-                    'is_final' => false,
                 ]
             );
         }
