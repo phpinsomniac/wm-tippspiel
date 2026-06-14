@@ -56,25 +56,31 @@ class MatchResultService
             $match->save();
         }
 
-        $isFinished = $matchData['matchIsFinished'] ?? false;
+        // ResultTypeID 2 is the final result in OpenLigaDB. The separate
+        // matchIsFinished flag can lag behind, so the final score is authoritative.
+        $finalResult = collect($matchData['matchResults'] ?? [])
+            ->first(fn($res) => (int) ($res['resultTypeID'] ?? 0) === 2);
 
-        if ($isFinished) {
-            // Finde das Endergebnis (ResultTypeID 2 bei OpenLigaDB ist meist das Endergebnis)
-            $finalResult = collect($matchData['matchResults'])->first(fn($res) => $res['resultTypeID'] === 2);
-
-            if ($finalResult) {
-                $scoreChanged = $match->home_score !== $finalResult['pointsTeam1']
-                    || $match->away_score !== $finalResult['pointsTeam2'];
-
-                $match->home_score = $finalResult['pointsTeam1'];
-                $match->away_score = $finalResult['pointsTeam2'];
-                $match->is_final = true;
-                $match->save();
-
-                if ($scoreChanged || $match->wasChanged('is_final')) {
-                    $this->updatePredictions($match);
-                }
+        if (! $finalResult) {
+            if ($matchData['matchIsFinished'] ?? false) {
+                Log::warning("Finales Match ohne Endergebnis in OpenLigaDB: {$homeTeamName} - {$awayTeamName}");
             }
+
+            return;
+        }
+
+        $homeScore = (int) $finalResult['pointsTeam1'];
+        $awayScore = (int) $finalResult['pointsTeam2'];
+        $scoreChanged = $match->home_score !== $homeScore
+            || $match->away_score !== $awayScore;
+
+        $match->home_score = $homeScore;
+        $match->away_score = $awayScore;
+        $match->is_final = true;
+        $match->save();
+
+        if ($scoreChanged || $match->wasChanged('is_final')) {
+            $this->updatePredictions($match);
         }
     }
 

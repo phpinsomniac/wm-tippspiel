@@ -87,6 +87,47 @@ class MatchResultServiceTest extends TestCase
         $this->assertSame('2026-06-14 06:00:00', $match->starts_at->format('Y-m-d H:i:s'));
     }
 
+    public function test_it_uses_final_result_even_when_openligadb_finished_flag_lags(): void
+    {
+        $match = MatchGame::create([
+            'home_team' => 'Brazil',
+            'away_team' => 'Morocco',
+            'starts_at' => '2026-06-14 00:00:00',
+            'stage' => 'Gruppenphase',
+            'is_final' => false,
+        ]);
+        $prediction = User::factory()->create()->predictions()->create([
+            'match_game_id' => $match->id,
+            'home_score' => 1,
+            'away_score' => 1,
+        ]);
+
+        Http::fake([
+            'api.openligadb.de/getmatchdata/wm2026' => Http::response([
+                [
+                    'team1' => ['teamName' => 'Brasilien'],
+                    'team2' => ['teamName' => 'Marokko'],
+                    'matchDateTime' => '2026-06-14T00:00:00',
+                    'matchIsFinished' => false,
+                    'matchResults' => [
+                        ['resultTypeID' => 1, 'pointsTeam1' => 1, 'pointsTeam2' => 1],
+                        ['resultTypeID' => 2, 'pointsTeam1' => 1, 'pointsTeam2' => 1],
+                    ],
+                ],
+            ]),
+        ]);
+
+        app(MatchResultService::class)->fetchAndStoreResults('wm2026');
+
+        $match->refresh();
+        $prediction->refresh();
+
+        $this->assertTrue($match->is_final);
+        $this->assertSame(1, $match->home_score);
+        $this->assertSame(1, $match->away_score);
+        $this->assertSame(5, $prediction->points);
+    }
+
     public function test_it_updates_already_final_matches_when_the_feed_corrects_the_score(): void
     {
         $match = MatchGame::create([
