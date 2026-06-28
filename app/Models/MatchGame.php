@@ -10,6 +10,9 @@ class MatchGame extends Model
 {
     use HasFactory;
 
+    public const ROUND_GROUP = 'group';
+    public const ROUND_FINAL = 'final';
+
     protected $fillable = [
         'group_name',
         'stage',
@@ -34,5 +37,26 @@ class MatchGame extends Model
     public function isPredictionOpen(): bool
     {
         return now()->lt($this->starts_at) && ! $this->is_final;
+    }
+
+    public function roundType(): string
+    {
+        $stage = mb_strtolower($this->stage);
+        $group = mb_strtolower((string) $this->group_name);
+
+        if (str_contains($stage, 'gruppenphase')
+            || str_contains($stage, 'vorrunde')
+            || $stage === 'group'
+            || str_contains($group, 'gruppe')
+            || str_contains($group, 'group')) {
+            return self::ROUND_GROUP;
+        }
+
+        return self::ROUND_FINAL;
+    }
+
+    public function isFinalRound(): bool
+    {
+        return $this->roundType() === self::ROUND_FINAL;
     }
 }

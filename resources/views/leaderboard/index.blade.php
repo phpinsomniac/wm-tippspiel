@@ -20,8 +20,16 @@
     </style>
 
     <div class="card">
-        <h2>Rangliste</h2>
-        <p class="muted">Sortiert nach Gesamtpunkten. Bei Gleichstand alphabetisch.</p>
+        <div class="row" style="justify-content: space-between">
+            <div>
+                <h2>Rangliste</h2>
+                <p class="muted">Sortiert nach Punkten der ausgewaehlten Runde. Bei Gleichstand alphabetisch.</p>
+            </div>
+            <div class="row">
+                <a class="button" style="{{ $round === \App\Models\MatchGame::ROUND_GROUP ? 'background:#1d4ed8' : 'background:#6b7280' }}" href="{{ route('leaderboard.index', ['round' => \App\Models\MatchGame::ROUND_GROUP]) }}">Vorrunde</a>
+                <a class="button" style="{{ $round === \App\Models\MatchGame::ROUND_FINAL ? 'background:#1d4ed8' : 'background:#6b7280' }}" href="{{ route('leaderboard.index', ['round' => \App\Models\MatchGame::ROUND_FINAL]) }}">Endrunde</a>
+            </div>
+        </div>
     </div>
 
     @if($leaders->isNotEmpty())
@@ -74,6 +82,6 @@
             @endforeach
         </div>
     @else
-        <div class="card">Noch keine Tipps in der Wertung.</div>
+        <div class="card">Noch keine Tipps in dieser Runde.</div>
     @endif
 @endsection

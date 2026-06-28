@@ -169,4 +169,50 @@ class MatchResultServiceTest extends TestCase
         $this->assertSame(1, $match->away_score);
         $this->assertSame(5, $prediction->points);
     }
+
+    public function test_it_creates_new_final_round_matches_when_teams_are_known(): void
+    {
+        Http::fake([
+            'api.openligadb.de/getmatchdata/wm2026' => Http::response([
+                [
+                    'team1' => ['teamName' => 'Deutschland'],
+                    'team2' => ['teamName' => 'Kanada'],
+                    'group' => ['groupName' => 'Achtelfinale'],
+                    'matchDateTime' => '2026-07-04T21:00:00',
+                    'matchIsFinished' => false,
+                    'matchResults' => [],
+                ],
+            ]),
+        ]);
+
+        app(MatchResultService::class)->fetchAndStoreResults('wm2026');
+
+        $this->assertDatabaseHas('match_games', [
+            'home_team' => 'Germany',
+            'away_team' => 'Canada',
+            'stage' => 'Achtelfinale',
+            'group_name' => null,
+            'is_final' => false,
+        ]);
+    }
+
+    public function test_it_does_not_create_final_round_matches_for_placeholder_teams(): void
+    {
+        Http::fake([
+            'api.openligadb.de/getmatchdata/wm2026' => Http::response([
+                [
+                    'team1' => ['teamName' => 'Sieger Gruppe A'],
+                    'team2' => ['teamName' => 'Zweiter Gruppe B'],
+                    'group' => ['groupName' => 'Achtelfinale'],
+                    'matchDateTime' => '2026-07-04T21:00:00',
+                    'matchIsFinished' => false,
+                    'matchResults' => [],
+                ],
+            ]),
+        ]);
+
+        app(MatchResultService::class)->fetchAndStoreResults('wm2026');
+
+        $this->assertDatabaseCount('match_games', 0);
+    }
 }

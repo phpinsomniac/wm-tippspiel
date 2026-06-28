@@ -2,8 +2,16 @@
 
 @section('content')
     <div class="card">
-        <h2>Spielplan und Tipps</h2>
-        <p class="muted">Tipps koennen bis zum Anpfiff angelegt oder geaendert werden.</p>
+        <div class="row" style="justify-content: space-between">
+            <div>
+                <h2>Spielplan und Tipps</h2>
+                <p class="muted">Tipps koennen bis zum Anpfiff angelegt oder geaendert werden.</p>
+            </div>
+            <div class="row">
+                <a class="button" style="{{ $round === \App\Models\MatchGame::ROUND_GROUP ? 'background:#1d4ed8' : 'background:#6b7280' }}" href="{{ route('matches.index', ['round' => \App\Models\MatchGame::ROUND_GROUP]) }}">Vorrunde tippen</a>
+                <a class="button" style="{{ $round === \App\Models\MatchGame::ROUND_FINAL ? 'background:#1d4ed8' : 'background:#6b7280' }}" href="{{ route('matches.index', ['round' => \App\Models\MatchGame::ROUND_FINAL]) }}">Endrunde tippen</a>
+            </div>
+        </div>
     </div>
 
     <form method="post" action="{{ route('predictions.storeAll') }}">
@@ -27,7 +35,7 @@
                                 <input type="number" name="predictions[{{ $loop->parent->index }}-{{ $loop->index }}][home_score]" min="0" max="30" value="{{ old('predictions.'.$loop->parent->index.'-'.$loop->index.'.home_score', $prediction?->home_score) }}" style="width:70px">
                                 <span>:</span>
                                 <input type="number" name="predictions[{{ $loop->parent->index }}-{{ $loop->index }}][away_score]" min="0" max="30" value="{{ old('predictions.'.$loop->parent->index.'-'.$loop->index.'.away_score', $prediction?->away_score) }}" style="width:70px">
-                                <button type="submit" formaction="{{ route('predictions.store', $match) }}" name="single_save" value="1" title="Nur dieses Spiel speichern">💾</button>
+                                <button type="submit" formaction="{{ route('predictions.store', $match) }}" name="single_save" value="1" title="Nur dieses Spiel speichern">&#128190;</button>
                             </div>
                         @else
                             <div>
@@ -42,7 +50,7 @@
                 </div>
             @endforeach
         @empty
-            <div class="card">Noch keine Spiele angelegt.</div>
+            <div class="card">Noch keine Spiele in dieser Runde angelegt.</div>
         @endforelse
 
         @if($matches->isNotEmpty())
