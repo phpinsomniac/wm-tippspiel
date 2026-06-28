@@ -45,7 +45,7 @@ class LeaderboardController extends Controller
     {
         if ($round === MatchGame::ROUND_FINAL) {
             $query
-                ->whereNotIn('stage', ['Gruppenphase', 'Vorrunde', 'Group'])
+                ->whereNotIn('stage', MatchGame::GROUP_STAGE_STAGES)
                 ->where(function (Builder $query) {
                     $query
                         ->whereNull('group_name')
@@ -61,9 +61,7 @@ class LeaderboardController extends Controller
 
         $query->where(function (Builder $query) {
             $query
-                ->where('stage', 'Gruppenphase')
-                ->orWhere('stage', 'Vorrunde')
-                ->orWhere('stage', 'Group')
+                ->whereIn('stage', MatchGame::GROUP_STAGE_STAGES)
                 ->orWhere('group_name', 'like', '%Gruppe%')
                 ->orWhere('group_name', 'like', '%Group%');
         });

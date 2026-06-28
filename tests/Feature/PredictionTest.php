@@ -148,4 +148,36 @@ class PredictionTest extends TestCase
         $response->assertOk();
         $response->assertSeeInOrder(['Team Earlier - Team D', 'Team Later - Team B']);
     }
+
+    public function test_numbered_group_round_matches_are_not_shown_as_final_round_matches(): void
+    {
+        $user = User::factory()->create();
+
+        MatchGame::create([
+            'home_team' => 'Suedafrika',
+            'away_team' => 'Suedkorea',
+            'starts_at' => now()->addDay(),
+            'stage' => '3. Runde',
+            'is_final' => false,
+        ]);
+        MatchGame::create([
+            'home_team' => 'Brasilien',
+            'away_team' => 'Marokko',
+            'starts_at' => now()->addDays(2),
+            'stage' => 'Sechzehntelfinale',
+            'is_final' => false,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('matches.index', ['round' => MatchGame::ROUND_GROUP]))
+            ->assertOk()
+            ->assertSee('Suedafrika vs. Suedkorea')
+            ->assertDontSee('Brasilien vs. Marokko');
+
+        $this->actingAs($user)
+            ->get(route('matches.index', ['round' => MatchGame::ROUND_FINAL]))
+            ->assertOk()
+            ->assertDontSee('Suedafrika vs. Suedkorea')
+            ->assertSee('Brasilien vs. Marokko');
+    }
 }

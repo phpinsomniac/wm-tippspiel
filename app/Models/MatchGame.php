@@ -12,6 +12,7 @@ class MatchGame extends Model
 
     public const ROUND_GROUP = 'group';
     public const ROUND_FINAL = 'final';
+    public const GROUP_STAGE_STAGES = ['Gruppenphase', 'Vorrunde', 'Group', '1. Runde', '2. Runde', '3. Runde'];
 
     protected $fillable = [
         'group_name',
@@ -47,6 +48,7 @@ class MatchGame extends Model
         if (str_contains($stage, 'gruppenphase')
             || str_contains($stage, 'vorrunde')
             || $stage === 'group'
+            || preg_match('/^\d+\.\s*runde$/u', $stage)
             || str_contains($group, 'gruppe')
             || str_contains($group, 'group')) {
             return self::ROUND_GROUP;

@@ -64,6 +64,15 @@ class LeaderboardTest extends TestCase
             'away_score' => 0,
             'is_final' => true,
         ]);
+        $thirdRoundMatch = MatchGame::create([
+            'home_team' => 'Suedafrika',
+            'away_team' => 'Suedkorea',
+            'starts_at' => now()->subDay(),
+            'stage' => '3. Runde',
+            'home_score' => 1,
+            'away_score' => 0,
+            'is_final' => true,
+        ]);
 
         Prediction::create([
             'user_id' => $user->id,
@@ -79,18 +88,27 @@ class LeaderboardTest extends TestCase
             'away_score' => 0,
             'points' => 7,
         ]);
+        Prediction::create([
+            'user_id' => $user->id,
+            'match_game_id' => $thirdRoundMatch->id,
+            'home_score' => 1,
+            'away_score' => 0,
+            'points' => 5,
+        ]);
 
         $this->actingAs($user)
             ->get(route('leaderboard.index', ['round' => MatchGame::ROUND_GROUP]))
             ->assertOk()
             ->assertSee('Deutschland - Kanada')
+            ->assertSee('Suedafrika - Suedkorea')
             ->assertDontSee('Brasilien - Marokko')
-            ->assertSee('5');
+            ->assertSee('10');
 
         $this->actingAs($user)
             ->get(route('leaderboard.index', ['round' => MatchGame::ROUND_FINAL]))
             ->assertOk()
             ->assertDontSee('Deutschland - Kanada')
+            ->assertDontSee('Suedafrika - Suedkorea')
             ->assertSee('Brasilien - Marokko')
             ->assertSee('7');
     }

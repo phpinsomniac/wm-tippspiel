@@ -12,11 +12,15 @@ class MatchResultService
     public function fetchAndStoreResults(string $leagueShortcut = 'wm2026'): void
     {
         try {
-            $response = Http::get("https://api.openligadb.de/getmatchdata/{$leagueShortcut}");
+            $response = Http::get("https://api.openligadb.de/getmatchdata/{$leagueShortcut}/2026");
 
             if ($response->failed()) {
-                Log::error("Fehler beim Abrufen der Matchdaten von OpenLigaDB: " . $response->status());
-                return;
+                $response = Http::get("https://api.openligadb.de/getmatchdata/{$leagueShortcut}");
+
+                if ($response->failed()) {
+                    Log::error("Fehler beim Abrufen der Matchdaten von OpenLigaDB: " . $response->status());
+                    return;
+                }
             }
 
             $matches = $response->json();
@@ -24,6 +28,8 @@ class MatchResultService
             foreach ($matches as $matchData) {
                 $this->updateMatch($matchData);
             }
+
+            $this->recalculateFinalPredictions();
         } catch (\Exception $e) {
             Log::error("Exception beim Abrufen der Matchdaten: " . $e->getMessage());
         }
@@ -124,6 +130,12 @@ class MatchResultService
 
     protected function normalizeTeamName(string $teamName): string
     {
+        $canonicalName = $this->canonicalTeamName($teamName);
+
+        if ($canonicalName !== null) {
+            return $canonicalName;
+        }
+
         if (preg_match('/^t.*rkei$/i', $teamName) || preg_match('/^t.*rkiye$/i', $teamName)) {
             return 'Turkiye';
         }
@@ -131,15 +143,19 @@ class MatchResultService
         $mapping = [
             'Kanada' => 'Canada',
             'Mexiko' => 'Mexico',
+            'Südafrika' => 'South Africa',
+            'Südkorea' => 'Korea Republic',
             'SÃ¼dafrika' => 'South Africa',
             'SÃ¼dkorea' => 'Korea Republic',
             'Tschechien' => 'Czechia',
             'Bosnien-Herzegowina' => 'Bosnia & Herzegovina',
+            'Türkei' => 'TÃƒÂ¼rkiye',
             'TÃ¼rkei' => 'TÃ¼rkiye',
             'Australien' => 'Australia',
             'Schweiz' => 'Switzerland',
             'Brasilien' => 'Brazil',
             'Katar' => 'Qatar',
+            'Elfenbeinküste' => 'CÃƒÂ´te d\'Ivoire',
             'ElfenbeinkÃ¼ste' => 'CÃ´te d\'Ivoire',
             'Deutschland' => 'Germany',
             'Niederlande' => 'Netherlands',
@@ -151,11 +167,13 @@ class MatchResultService
             'Iran' => 'IR Iran',
             'Neuseeland' => 'New Zealand',
             'Belgien' => 'Belgium',
+            'Ägypten' => 'Egypt',
             'Ã„gypten' => 'Egypt',
             'Frankreich' => 'France',
             'Irak' => 'Iraq',
             'Norwegen' => 'Norway',
             'Argentinien' => 'Argentina',
+            'Österreich' => 'Austria',
             'Ã–sterreich' => 'Austria',
             'Jordanien' => 'Jordan',
             'Algerien' => 'Algeria',
@@ -178,6 +196,86 @@ class MatchResultService
         ];
 
         return $mapping[$teamName] ?? $legacyEncodingMapping[$teamName] ?? $teamName;
+    }
+
+    protected function canonicalTeamName(string $teamName): ?string
+    {
+        $mapping = [
+            'kanada' => 'Canada',
+            'mexiko' => 'Mexico',
+            'sudafrika' => 'South Africa',
+            'suedafrika' => 'South Africa',
+            'southafrica' => 'South Africa',
+            'sudkorea' => 'Korea Republic',
+            'suedkorea' => 'Korea Republic',
+            'korearepublic' => 'Korea Republic',
+            'tschechien' => 'Czechia',
+            'czechia' => 'Czechia',
+            'bosnienherzegowina' => 'Bosnia & Herzegovina',
+            'bosniaherzegovina' => 'Bosnia & Herzegovina',
+            'turkei' => 'Turkiye',
+            'tuerkei' => 'Turkiye',
+            'turkiye' => 'Turkiye',
+            'australien' => 'Australia',
+            'schweiz' => 'Switzerland',
+            'brasilien' => 'Brazil',
+            'katar' => 'Qatar',
+            'elfenbeinkuste' => 'CÃ´te d\'Ivoire',
+            'elfenbeinkueste' => 'CÃ´te d\'Ivoire',
+            'cotedivoire' => 'CÃ´te d\'Ivoire',
+            'deutschland' => 'Germany',
+            'niederlande' => 'Netherlands',
+            'schweden' => 'Sweden',
+            'tunesien' => 'Tunisia',
+            'saudiarabien' => 'Saudi Arabia',
+            'spanien' => 'Spain',
+            'kapverde' => 'Cabo Verde',
+            'iran' => 'IR Iran',
+            'iriran' => 'IR Iran',
+            'neuseeland' => 'New Zealand',
+            'belgien' => 'Belgium',
+            'agypten' => 'Egypt',
+            'aegypten' => 'Egypt',
+            'frankreich' => 'France',
+            'irak' => 'Iraq',
+            'norwegen' => 'Norway',
+            'argentinien' => 'Argentina',
+            'osterreich' => 'Austria',
+            'oesterreich' => 'Austria',
+            'jordanien' => 'Jordan',
+            'algerien' => 'Algeria',
+            'ghana' => 'Ghana',
+            'panama' => 'Panama',
+            'kroatien' => 'Croatia',
+            'portugal' => 'Portugal',
+            'drkongo' => 'Congo DR',
+            'congodr' => 'Congo DR',
+            'usbekistan' => 'Uzbekistan',
+            'kolumbien' => 'Colombia',
+            'schottland' => 'Scotland',
+            'marokko' => 'Morocco',
+            'haiti' => 'Haiti',
+            'ecuador' => 'Ecuador',
+            'curacao' => 'CuraÃ§ao',
+            'italien' => 'Italy',
+        ];
+
+        return $mapping[$this->teamKey($teamName)] ?? null;
+    }
+
+    protected function teamKey(string $teamName): string
+    {
+        $name = strtr($teamName, [
+            'Ä' => 'Ae', 'Ö' => 'Oe', 'Ü' => 'Ue', 'ä' => 'ae', 'ö' => 'oe', 'ü' => 'ue',
+            'ß' => 'ss', 'ç' => 'c', 'Ç' => 'C', 'ô' => 'o', 'Ô' => 'O', 'é' => 'e',
+            'Ã¼' => 'u', 'Ãœ' => 'U', 'Ã¶' => 'o', 'Ã–' => 'O', 'Ã¤' => 'a', 'Ã„' => 'A',
+            'Ã§' => 'c', 'Ã‡' => 'C', 'Ã´' => 'o', 'Ã”' => 'O', 'Ã©' => 'e',
+            '' => 'u', '‡' => 'c', '“' => 'o', 'Ž' => 'A', '™' => 'O',
+        ]);
+
+        $ascii = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $name);
+
+        return preg_replace('/[^a-z0-9]/', '', mb_strtolower($ascii ?: $name));
     }
 
     protected function stageFromApi(array $matchData): array
@@ -204,7 +302,8 @@ class MatchResultService
         return str_contains($name, 'gruppe')
             || str_contains($name, 'group')
             || str_contains($name, 'vorrunde')
-            || str_contains($name, 'gruppenphase');
+            || str_contains($name, 'gruppenphase')
+            || preg_match('/^\d+\.\s*runde$/u', $name);
     }
 
     protected function isFinalRoundStage(string $stage, ?string $groupName): bool
@@ -238,5 +337,12 @@ class MatchResultService
             $prediction->points = $prediction->calculatePoints();
             $prediction->save();
         }
+    }
+
+    protected function recalculateFinalPredictions(): void
+    {
+        MatchGame::where('is_final', true)
+            ->with('predictions')
+            ->each(fn (MatchGame $match) => $this->updatePredictions($match));
     }
 }

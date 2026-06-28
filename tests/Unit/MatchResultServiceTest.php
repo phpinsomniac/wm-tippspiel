@@ -29,7 +29,7 @@ class MatchResultServiceTest extends TestCase
         ]);
 
         Http::fake([
-            'api.openligadb.de/getmatchdata/wm2026' => Http::response([
+            'api.openligadb.de/getmatchdata/wm2026*' => Http::response([
                 [
                     'team1' => ['teamName' => 'Kanada'],
                     'team2' => ['teamName' => 'Bosnien-Herzegowina'],
@@ -44,6 +44,8 @@ class MatchResultServiceTest extends TestCase
         ]);
 
         app(MatchResultService::class)->fetchAndStoreResults('wm2026');
+
+        Http::assertSent(fn ($request) => $request->url() === 'https://api.openligadb.de/getmatchdata/wm2026/2026');
 
         $match->refresh();
         $prediction->refresh();
@@ -66,7 +68,7 @@ class MatchResultServiceTest extends TestCase
         ]);
 
         Http::fake([
-            'api.openligadb.de/getmatchdata/wm2026' => Http::response([
+            'api.openligadb.de/getmatchdata/wm2026*' => Http::response([
                 [
                     'team1' => ['teamName' => 'Australien'],
                     'team2' => ['teamName' => 'Türkei'],
@@ -103,7 +105,7 @@ class MatchResultServiceTest extends TestCase
         ]);
 
         Http::fake([
-            'api.openligadb.de/getmatchdata/wm2026' => Http::response([
+            'api.openligadb.de/getmatchdata/wm2026*' => Http::response([
                 [
                     'team1' => ['teamName' => 'Brasilien'],
                     'team2' => ['teamName' => 'Marokko'],
@@ -147,7 +149,7 @@ class MatchResultServiceTest extends TestCase
         ]);
 
         Http::fake([
-            'api.openligadb.de/getmatchdata/wm2026' => Http::response([
+            'api.openligadb.de/getmatchdata/wm2026*' => Http::response([
                 [
                     'team1' => ['teamName' => 'Kanada'],
                     'team2' => ['teamName' => 'Bosnien-Herzegowina'],
@@ -170,10 +172,39 @@ class MatchResultServiceTest extends TestCase
         $this->assertSame(5, $prediction->points);
     }
 
+    public function test_it_recalculates_stale_points_for_final_matches(): void
+    {
+        $match = MatchGame::create([
+            'home_team' => 'Canada',
+            'away_team' => 'Bosnia & Herzegovina',
+            'starts_at' => '2026-06-12 21:00:00',
+            'stage' => 'Gruppenphase',
+            'home_score' => 1,
+            'away_score' => 1,
+            'is_final' => true,
+        ]);
+        $prediction = User::factory()->create()->predictions()->create([
+            'match_game_id' => $match->id,
+            'home_score' => 1,
+            'away_score' => 1,
+            'points' => 0,
+        ]);
+
+        Http::fake([
+            'api.openligadb.de/getmatchdata/wm2026*' => Http::response([]),
+        ]);
+
+        app(MatchResultService::class)->fetchAndStoreResults('wm2026');
+
+        $prediction->refresh();
+
+        $this->assertSame(5, $prediction->points);
+    }
+
     public function test_it_creates_new_final_round_matches_when_teams_are_known(): void
     {
         Http::fake([
-            'api.openligadb.de/getmatchdata/wm2026' => Http::response([
+            'api.openligadb.de/getmatchdata/wm2026*' => Http::response([
                 [
                     'team1' => ['teamName' => 'Deutschland'],
                     'team2' => ['teamName' => 'Kanada'],
@@ -196,10 +227,32 @@ class MatchResultServiceTest extends TestCase
         ]);
     }
 
+    public function test_it_does_not_create_final_round_matches_for_numbered_group_rounds(): void
+    {
+        Http::fake([
+            'api.openligadb.de/getmatchdata/wm2026*' => Http::response([
+                [
+                    'team1' => ['teamName' => 'Südafrika'],
+                    'team2' => ['teamName' => 'Südkorea'],
+                    'group' => ['groupName' => '3. Runde'],
+                    'matchDateTime' => '2026-06-25T03:00:00',
+                    'matchIsFinished' => true,
+                    'matchResults' => [
+                        ['resultTypeID' => 2, 'pointsTeam1' => 1, 'pointsTeam2' => 0],
+                    ],
+                ],
+            ]),
+        ]);
+
+        app(MatchResultService::class)->fetchAndStoreResults('wm2026');
+
+        $this->assertDatabaseCount('match_games', 0);
+    }
+
     public function test_it_does_not_create_final_round_matches_for_placeholder_teams(): void
     {
         Http::fake([
-            'api.openligadb.de/getmatchdata/wm2026' => Http::response([
+            'api.openligadb.de/getmatchdata/wm2026*' => Http::response([
                 [
                     'team1' => ['teamName' => 'Sieger Gruppe A'],
                     'team2' => ['teamName' => 'Zweiter Gruppe B'],
