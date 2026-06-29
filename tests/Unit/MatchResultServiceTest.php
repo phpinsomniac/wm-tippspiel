@@ -13,6 +13,17 @@ class MatchResultServiceTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_it_uses_current_world_cup_shortcut_by_default(): void
+    {
+        Http::fake([
+            'api.openligadb.de/getmatchdata/wm26*' => Http::response([]),
+        ]);
+
+        app(MatchResultService::class)->fetchAndStoreResults();
+
+        Http::assertSent(fn ($request) => $request->url() === 'https://api.openligadb.de/getmatchdata/wm26/2026');
+    }
+
     public function test_it_maps_openligadb_german_canada_name_and_updates_result(): void
     {
         $match = MatchGame::create([

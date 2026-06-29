@@ -91,7 +91,7 @@ Um die Ergebnisse manuell zu aktualisieren, kann folgender Befehl genutzt werden
 php artisan app:fetch-match-results
 ```
 
-Standardmäßig wird die WM 2026 (`wm2026`) abgefragt. Für andere Wettbewerbe kann das Kürzel als Argument übergeben werden:
+Standardmäßig wird die WM 2026 (`wm26`) abgefragt. Für andere Wettbewerbe kann das Kürzel als Argument übergeben werden:
 
 ```bash
 php artisan app:fetch-match-results bl1

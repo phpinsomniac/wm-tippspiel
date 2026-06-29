@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 
 class MatchResultService
 {
-    public function fetchAndStoreResults(string $leagueShortcut = 'wm2026'): void
+    public function fetchAndStoreResults(string $leagueShortcut = 'wm26'): void
     {
         try {
             $response = Http::get("https://api.openligadb.de/getmatchdata/{$leagueShortcut}/2026");

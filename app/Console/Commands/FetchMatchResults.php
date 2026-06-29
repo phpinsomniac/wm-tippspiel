@@ -11,7 +11,7 @@ class FetchMatchResults extends Command
      *
      * @var string
      */
-    protected $signature = 'app:fetch-match-results {league=wm2026}';
+    protected $signature = 'app:fetch-match-results {league=wm26}';
 
     /**
      * The console command description.
